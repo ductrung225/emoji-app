@@ -1,0 +1,79 @@
+import os
+import cv2
+import numpy as np
+from sklearn.model_selection import train_test_split
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.utils import to_categorical
+
+
+labels = {
+    "happy": 0,
+    "sad": 1,
+    "angry": 2,
+    "cry": 3,
+    "surprise": 4,
+    "hand": 5,
+    "vietnam_flag": 6,
+    "clock": 7,
+    "cloud": 8,
+    "fire": 9
+}
+
+X = []
+y = []
+
+dataset_path = "emoji_dataset"
+
+
+for folder in os.listdir(dataset_path):
+
+    folder_path = os.path.join(dataset_path, folder)
+
+    for img_name in os.listdir(folder_path):
+
+        img_path = os.path.join(folder_path, img_name)
+
+        img = cv2.imread(img_path)
+
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        img = 255 - img
+
+        X.append(img.flatten())  
+        y.append(labels[folder])
+
+X = np.array(X).astype("float32") / 255
+y = np.array(y)
+
+y = to_categorical(y, 10)
+
+print("Shape:", X.shape)
+
+
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+model = Sequential()
+
+model.add(Dense(512, activation='relu', input_shape=(2500,)))
+
+model.add(Dense(256, activation='relu'))
+
+model.add(Dense(128, activation='relu'))
+
+model.add(Dense(10, activation='softmax'))
+
+model.summary()
+
+
+model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
+
+model.fit(x_train, y_train, epochs=50, batch_size=8, validation_split=0.1)
+
+
+loss, acc = model.evaluate(x_test, y_test)
+
+print("Accuracy:", acc)
+
+model.save("emoji_ann_model.h5")
